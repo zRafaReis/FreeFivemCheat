@@ -30,6 +30,9 @@
 #include "Dependencies/ImGui/imgui_impl_win32.h"
 #include "Dependencies/ImGui/imgui_internal.h"
 
+// Json
+#include "Dependencies/NlohmannJson.hpp"
+
 // DirectX Inlcude
 #include <d3d11.h>
 #include <d3dx11.h>

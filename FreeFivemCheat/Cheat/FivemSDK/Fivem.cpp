@@ -1,5 +1,11 @@
 #include "Fivem.hpp"
 
+#include <fstream>
+#include <filesystem>
+#include <thread>
+
+#include "../Cheat.hpp"
+
 namespace Cheat
 {
 	void FivemSDK::Intialize()
@@ -241,5 +247,179 @@ namespace Cheat
 				bIsIntialized = true;
 			}
 		}
+
+		if (bIsIntialized)
+			FrameWork::Memory::AttachProces(Pid);
+	}
+
+	void FivemSDK::UpdateEntities()
+	{
+		if (!pWorld)
+		{
+			pWorld = (CWorld*)FrameWork::Memory::ReadMemory<uint64_t>(World);
+
+			if (!pWorld)
+				return;
+
+#ifdef _DEBUG
+			std::cout << XorStr("[FivemSDK] World: 0x") << std::hex << std::uppercase << pWorld << std::endl;
+#endif // _DEBUG
+		}
+
+		pLocalPlayer = pWorld->LocalPlayer();
+
+		if (!pLocalPlayer)
+			return;
+
+#ifdef _DEBUG
+		static bool Logged = false;
+		if (!Logged)
+		{
+			std::cout << XorStr("[FivemSDK] LocalPlayer: 0x") << std::hex << std::uppercase << pLocalPlayer << std::endl;
+			Logged = true;
+		}
+#endif // _DEBUG
+
+		if (!pReplayInterface)
+		{
+			pReplayInterface = (CReplayInterface*)FrameWork::Memory::ReadMemory<uint64_t>(ReplayInterface);
+
+			if (!pReplayInterface)
+				return;
+
+#ifdef _DEBUG
+			std::cout << XorStr("[FivemSDK] ReplayInterface: 0x") << std::hex << std::uppercase << pReplayInterface << std::endl;
+#endif // _DEBUG
+		}
+
+		if (!pPedInterface)
+		{
+			pPedInterface = pReplayInterface->PedInterface();
+
+			if (!pPedInterface)
+				return;
+
+#ifdef _DEBUG
+			std::cout << XorStr("[FivemSDK] PedInterface: 0x") << std::hex << std::uppercase << pPedInterface << std::endl;
+#endif // _DEBUG
+		}
+
+		if (!pCamGameplayDirector)
+		{
+			pCamGameplayDirector = (CCamGameplayDirector*)FrameWork::Memory::ReadMemory<uint64_t>(Camera);
+
+			if (!pCamGameplayDirector)
+				return;
+
+#ifdef _DEBUG
+			std::cout << XorStr("[FivemSDK] CamGameplayDirector: 0x") << std::hex << std::uppercase << pCamGameplayDirector << std::endl;
+#endif // _DEBUG
+		}
+
+		if (ServerIp.empty() && !LanGame)
+		{
+			if (FivemFolder.empty() || CrashoMetryLocation.empty())
+			{
+				HKEY hKey;
+				WCHAR Buffer[MAX_PATH];
+				DWORD BufferSize = sizeof(Buffer);
+				if (SafeCall(RegOpenKeyEx)(HKEY_CURRENT_USER, XorStr(L"SOFTWARE\\CitizenFX\\FiveM"), 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+				{
+					if (RegQueryValueEx(hKey, XorStr(L"Last Run Location"), NULL, NULL, (LPBYTE)Buffer, &BufferSize) == ERROR_SUCCESS)
+					{
+						std::string CrashoMetryPath = FrameWork::Misc::Wstring2String(std::wstring(Buffer)) + XorStr("data\\cache\\crashometry");
+						if (std::filesystem::exists(CrashoMetryPath))
+						{
+							FivemFolder = FrameWork::Misc::Wstring2String(std::wstring(Buffer));
+							CrashoMetryLocation = CrashoMetryPath;
+						}
+					}
+
+					SafeCall(RegCloseKey)(hKey);
+				}
+			}
+
+			if (!CrashoMetryLocation.empty() || ServerIp.empty())
+			{
+				std::ifstream Crashometry(CrashoMetryLocation);
+				std::string Line1;
+
+				if (Crashometry.is_open())
+				{
+					if (std::getline(Crashometry, Line1))
+					{
+						size_t StartPos = Line1.find(XorStr("last_server_url"));
+						if (StartPos != std::string::npos)
+						{
+							std::string TempServerIp = Line1.substr(StartPos + 15);
+
+							StartPos = TempServerIp.find(XorStr("last_server"));
+
+							TempServerIp = TempServerIp.substr(StartPos + 11);
+
+							StartPos = TempServerIp.find(XorStr(":"));
+
+							ServerIp = TempServerIp.substr(0, StartPos);
+							ServerPort = TempServerIp.substr(StartPos + 1, TempServerIp.find(XorStr("")) - StartPos - 1);
+						}
+					}
+
+					Crashometry.close();
+				}
+			}
+
+			if (ServerIp.empty() || ServerPort.empty())
+			{
+				LanGame = true;
+
+#ifdef _DEBUG
+				std::cout << XorStr("[FivemSDK] Lan Game.") << std::endl;
+#endif // _DEBUG
+			}
+			else
+			{
+#ifdef _DEBUG
+				std::cout << XorStr("[FivemSDK] Server IP: ") << ServerIp << XorStr(":") << ServerPort << std::endl;
+#endif // _DEBUG
+
+				std::thread([&]() { this->UpdateNamesThread(); }).detach();
+			}
+		}
+	}
+
+	void FivemSDK::UpdateNamesThread()
+	{
+		while (!g_Options.General.ShutDown)
+		{
+			if (ServerIp.size() > 5 && ServerPort.size() > 2)
+			{
+				PlayersInfo = GetServerInfo();
+
+				for (const auto& Player : PlayersInfo)
+				{
+					PlayerIdToName[Player[XorStr("id")]] = Player[XorStr("name")];
+				}
+
+#ifdef _DEBUG
+				std::cout << XorStr("[FivemSDK] Found Players Infos, Connected Players: ") << std::dec << PlayerIdToName.size() << std::endl;
+#endif // _DEBUG
+
+				std::this_thread::sleep_for(std::chrono::seconds(10));
+			}
+
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	}
+
+	nlohmann::json FivemSDK::GetServerInfo()
+	{
+		if (!ServerIp.empty())
+		{
+			std::string RawServerInfo = FrameWork::Misc::DownloadServerInfo(FrameWork::Misc::String2WString(ServerIp), std::atoi(ServerPort.c_str()));
+
+			return nlohmann::json::parse(RawServerInfo);
+		}
+
+		return NULL;
 	}
 }

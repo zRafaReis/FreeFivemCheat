@@ -43,6 +43,9 @@ BOOL CALLBACK EnumWindowsCallback(HWND Handle, LPARAM lParam)
 	return true;
 }
 
+HANDLE AttachedProcessHandle;
+DWORD AttachedProcessPid;
+
 namespace FrameWork
 {
 	HWND Memory::GetWindowHandleByPID(DWORD Pid)
@@ -139,5 +142,67 @@ namespace FrameWork
 
 		SafeCall(CloseHandle)(hSnapshot);
 		return ModuleBase;
+	}
+
+	void Memory::AttachProces(DWORD Pid)
+	{
+		AttachedProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, false, Pid);
+		AttachedProcessPid = Pid;
+	}
+
+	void Memory::DetachProcess()
+	{
+		CloseHandle(AttachedProcessHandle);
+		AttachedProcessHandle = nullptr;
+		AttachedProcessPid = 0x0;
+	}
+
+	void Memory::ReadProcessMemoryImpl(uint64_t ReadAddress, LPVOID Read, SIZE_T Size)
+	{
+		if (AttachedProcessHandle && AttachedProcessPid)
+		{
+			if (ReadProcessMemory(AttachedProcessHandle, (LPVOID)ReadAddress, Read, Size, NULL))
+			{
+				return;
+			}
+		}
+
+		*(LPVOID*)Read = 0x0;
+	}
+
+	bool Memory::WriteProcessMemoryImpl(uint64_t WriteAddress, LPVOID Value, SIZE_T Size)
+	{
+		if (AttachedProcessHandle && AttachedProcessPid)
+		{
+			if (WriteProcessMemory(AttachedProcessHandle, (LPVOID)WriteAddress, Value, Size, NULL))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	std::string Memory::ReadProcessMemoryString(uint64_t ReadAddress, SIZE_T StringSize)
+	{
+		const int BufferSize = 256;
+
+		char Buffer[BufferSize];
+
+		int BytesRead = 0;
+
+		while (BytesRead < BufferSize && BytesRead < StringSize)
+		{
+			char Character;
+			ReadProcessMemoryImpl((uint64_t)ReadAddress + BytesRead, &Character, sizeof(char));
+			Buffer[BytesRead] = Character;
+
+			if (Character == '\0')
+				break;
+
+			BytesRead++;
+		}
+
+		return std::string(Buffer);
 	}
 }

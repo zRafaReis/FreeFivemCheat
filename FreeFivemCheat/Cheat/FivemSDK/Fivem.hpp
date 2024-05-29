@@ -33,11 +33,15 @@ namespace Cheat
 	{
 	public:
 		void Intialize();
+		void UpdateEntities();
 
 		DWORD GetPid() { return Pid; }
 		uint64_t GetModuleBase() { return ModuleBase; };
 		std::string GetModuleName() { return ModuleName; };
 		bool HasAdehsive() { return ((int)GameVersion % 2) != 0; }
+
+		void UpdateNamesThread();
+		nlohmann::json GetServerInfo();
 
 		bool IsInitialized() { return bIsIntialized; }
 
@@ -56,6 +60,8 @@ namespace Cheat
 		std::string CrashoMetryLocation;
 		std::string ServerIp;
 		std::string ServerPort;
+		nlohmann::json PlayersInfo;
+		std::unordered_map<int, std::string> PlayerIdToName;
 		bool LanGame;
 		eGAME_VERSION GameVersion;
 

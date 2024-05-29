@@ -47,6 +47,8 @@ namespace Cheat
 
 				ImGui::GetIO().MouseDrawCursor = Interface.GetMenuOpen();
 
+				g_Fivem.UpdateEntities();
+
 				if (Interface.ResizeHeight != 0 || Interface.ResizeWidht != 0)
 				{
 					FrameWork::Overlay::dxCleanupRenderTarget();
@@ -86,5 +88,7 @@ namespace Cheat
 
 		FrameWork::Overlay::ShutDown();
 		FrameWork::Overlay::dxShutDown();
+
+		FrameWork::Memory::DetachProcess();
 	}
 }
