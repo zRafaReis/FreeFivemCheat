@@ -20,6 +20,16 @@
 #include "Utilities/Misc.hpp"
 #include "Utilities/Memory.hpp"
 
+// Render
+#include "Render/Overlay.hpp"
+#include "Render/Interface.hpp"
+
+// ImGui
+#include "Dependencies/ImGui/imgui.h"
+#include "Dependencies/ImGui/imgui_impl_dx11.h"
+#include "Dependencies/ImGui/imgui_impl_win32.h"
+#include "Dependencies/ImGui/imgui_internal.h"
+
 // DirectX Inlcude
 #include <d3d11.h>
 #include <d3dx11.h>
