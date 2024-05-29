@@ -21,6 +21,7 @@ namespace FrameWork
 
 		void WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+		void HandleWindowDrag();
 		void HandleMenuKey();
 
 		void ShutDown();

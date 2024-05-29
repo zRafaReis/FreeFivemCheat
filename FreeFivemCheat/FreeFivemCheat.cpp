@@ -13,7 +13,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 
 	Cheat::Initialize();
 
-
 	while (!g_Options.General.ShutDown)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));

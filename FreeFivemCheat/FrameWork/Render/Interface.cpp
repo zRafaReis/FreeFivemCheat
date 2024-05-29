@@ -3,6 +3,10 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+bool LeftMouseDown = false;
+ImVec2 LastMousePos = ImVec2(0, 0);
+ImRect WindowRect = ImRect();
+
 namespace FrameWork
 {
 	void Interface::Initialize(HWND Window, HWND TargetWindow, ID3D11Device* Device, ID3D11DeviceContext* DeviceContext)
@@ -19,6 +23,10 @@ namespace FrameWork
 	{
 		ImGui::StyleColorsDark();
 
+		ImGuiStyle* Style = &ImGui::GetStyle();
+
+		Style->WindowRounding = 5;
+
 		ImGuiIO& io = ImGui::GetIO();
 		io.WantSaveIniSettings = false;
 		io.IniFilename = nullptr;
@@ -30,10 +38,40 @@ namespace FrameWork
 		if (!bIsMenuOpen)
 			return;
 
-		ImGui::Begin(XorStr("Free FiveM Cheat"), &bIsMenuOpen);
+		HandleWindowDrag();
+
+		ImGui::SetNextWindowSize(ImVec2(450, 250));
+		ImGui::Begin(XorStr("Free FiveM Cheat"), &bIsMenuOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 		{
-			if (ImGui::Button(XorStr("ShutDown")))
-				g_Options.General.ShutDown = true;
+			ImVec2 WindowPos = ImGui::GetWindowPos();
+			ImVec2 WindowSize = ImGui::GetWindowSize();
+
+			WindowRect = ImRect(WindowPos, WindowPos + WindowSize);
+
+			ImGui::BeginTabBar(XorStr("MainTabs"));
+			{
+				if (ImGui::BeginTabItem(XorStr("Aimbot")))
+				{
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem(XorStr("ESP")))
+				{
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem(XorStr("Misc")))
+				{
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem(XorStr("General")))
+				{
+					ImGui::SliderInt(XorStr("Thread Delay"), &g_Options.General.ThreadDelay, 0, 100, XorStr("%d ms"));
+					if (ImGui::Button(XorStr("ShutDown")))
+						g_Options.General.ShutDown = true;
+
+					ImGui::EndTabItem();
+				}
+			}
+			ImGui::EndTabBar();
 		}
 		ImGui::End();
 	}
@@ -55,6 +93,42 @@ namespace FrameWork
 		{
 			ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 		}
+	}
+
+	void Interface::HandleWindowDrag()
+	{
+		if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+		{
+			if (!LeftMouseDown)
+				LastMousePos = ImGui::GetMousePos();
+
+			LeftMouseDown = true;
+		}
+		else
+		{
+			LeftMouseDown = false;
+		}
+
+		ImVec2 CurrentMousePos = ImGui::GetMousePos();
+
+		if (CurrentMousePos.x != LastMousePos.x || CurrentMousePos.y != LastMousePos.y)
+		{
+			if (LeftMouseDown)
+			{
+				if (WindowRect.Contains(CurrentMousePos))
+				{
+					ImVec2 Delta = CurrentMousePos - LastMousePos;
+					ImVec2 Min = ImVec2(0, 0);
+					ImVec2 Max = ImGui::GetIO().DisplaySize - WindowRect.GetSize();
+					ImVec2 Pos = ImClamp(WindowRect.Min + Delta, Min, Max);
+					WindowRect.Min = Pos;
+					LastMousePos = CurrentMousePos;
+				}
+			}
+		}
+
+		ImGui::SetNextWindowPos(WindowRect.Min);
+		ImGui::SetNextWindowSize(WindowRect.GetSize());
 	}
 
 	void Interface::HandleMenuKey()

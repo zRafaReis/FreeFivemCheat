@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Offsets.hpp"
+
 #include <FrameWork/FrameWork.hpp>
 
 namespace Cheat
@@ -7,6 +9,13 @@ namespace Cheat
 	class CPlayerInfo
 	{
 	public:
+		int GetPlayerID()
+		{
+			if (!this)
+				return 0;
+
+			return FrameWork::Memory::ReadMemory<int>(this + Offsets::PlayerNetID);
+		}
 	};
 
 	class CWeaponInfo
@@ -36,12 +45,36 @@ namespace Cheat
 	class CPed
 	{
 	public:
+		CPlayerInfo* GetPlayerInfo()
+		{
+			if (!this)
+				return 0;
+
+			return (CPlayerInfo*)FrameWork::Memory::ReadMemory<uint64_t>(this + Offsets::PlayerInfo);
+		}
+
+		CWeaponManager* GetWeaponManager()
+		{
+			if (!this)
+				return 0;
+
+			return (CWeaponManager*)FrameWork::Memory::ReadMemory<uint64_t>(this + Offsets::WeaponManager);
+		}
+
 		Vector3D GetCoordinate()
 		{
 			if (!this)
 				return Vector3D{ 0,0,0 };
 
 			return FrameWork::Memory::ReadMemory<Vector3D>(this + 0x90);
+		}
+
+		bool IsGodMode()
+		{
+			if (!this)
+				return false;
+
+			return FrameWork::Memory::ReadMemory<bool>(this + 0x189);
 		}
 
 		float GetHealth()
@@ -66,6 +99,44 @@ namespace Cheat
 				return 0;
 
 			uint64_t NetObject = FrameWork::Memory::ReadMemory<uint64_t>(this + 0xD0);
+		}
+
+		uint32_t GetPedType()
+		{
+			if (!this)
+				return 0;
+
+			return FrameWork::Memory::ReadMemory<uint32_t>(this + Offsets::EntityType);
+		}
+
+		bool IsNPC()
+		{
+			uint32_t PedType = GetPedType();
+
+			if (!PedType)
+				return false;
+
+			PedType = PedType << 11 >> 25;
+
+			if (PedType != 2)
+				return true;
+
+			return false;
+		}
+
+		bool IsAnimal()
+		{
+			uint32_t PedType = GetPedType();
+
+			if (!PedType)
+				return false;
+
+			PedType = PedType << 11 >> 25;
+
+			if (PedType > 27)
+				return true;
+
+			return false;
 		}
 	};
 

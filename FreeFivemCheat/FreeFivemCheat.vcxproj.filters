@@ -346,6 +346,9 @@
     <ClInclude Include="FrameWork\Render\Interface.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Cheat\FivemSDK\Offsets.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="FrameWork\Dependencies\DirectX\Include\D3DX_DXGIFormatConvert.inl">

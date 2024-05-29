@@ -4,6 +4,7 @@
 #include "Classes.hpp"
 
 #include <FrameWork/FrameWork.hpp>
+#include <mutex>
 
 namespace Cheat
 {
@@ -29,6 +30,33 @@ namespace Cheat
 		GAME_VERSION_GTA_b3095,
 	};
 
+	struct PedStaticInfo
+	{
+		CPed* Ped;
+		int iIndex;
+		int NetId;
+		bool bIsLocalPlayer;
+		bool bIsNPC;
+		std::string Name;
+
+		std::unordered_map<unsigned int, unsigned int> MaskToBoneId;
+	};
+
+	struct Entity
+	{
+		PedStaticInfo StaticInfo;
+
+		Vector3D Cordinates;
+	};
+
+	struct LocalPEDInfo
+	{
+		CPed* Ped;
+		int iIndex;
+		ImVec2 ScreenPos;
+		Vector3D WorldPos;
+	};
+
 	class FivemSDK
 	{
 	public:
@@ -39,6 +67,9 @@ namespace Cheat
 		uint64_t GetModuleBase() { return ModuleBase; };
 		std::string GetModuleName() { return ModuleName; };
 		bool HasAdehsive() { return ((int)GameVersion % 2) != 0; }
+
+		ImVec2 WorldToScreen(Vector3D Pos);
+		bool IsOnScreen(ImVec2 Pos);
 
 		void UpdateNamesThread();
 		nlohmann::json GetServerInfo();
@@ -73,6 +104,13 @@ namespace Cheat
 		CCamGameplayDirector* pCamGameplayDirector;
 
 		uint64_t pViewPort;
+
+	private:
+		std::mutex LockList;
+		std::vector<Entity> EntityList;
+		std::unordered_map<CPed*, PedStaticInfo> CachedStaticInfoList;
+		LocalPEDInfo LocalPlayerInfo;
+
 	};
 
 	inline FivemSDK g_Fivem;

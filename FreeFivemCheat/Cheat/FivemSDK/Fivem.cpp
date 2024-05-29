@@ -8,6 +8,11 @@
 
 namespace Cheat
 {
+	uint64_t Offsets::EntityType;
+	uint64_t Offsets::PlayerInfo;
+	uint64_t Offsets::WeaponManager;
+	uint64_t Offsets::PlayerNetID;
+
 	void FivemSDK::Intialize()
 	{
 		if (bIsIntialized)
@@ -36,6 +41,11 @@ namespace Cheat
 				ViewPort = ModuleBase + 0x1F6A7E0;
 				Camera = ModuleBase + 0x1F6B940;
 
+				Offsets::EntityType = 0x10B8;
+				Offsets::PlayerInfo = 0x10A8;
+				Offsets::WeaponManager = 0x10D8;
+				Offsets::PlayerNetID = 0x78;
+
 				bIsIntialized = true;
 			}
 		}
@@ -61,6 +71,11 @@ namespace Cheat
 				ReplayInterface = ModuleBase + 0x1EE18A8;
 				ViewPort = ModuleBase + 0x1F888C0;
 				Camera = ModuleBase + 0x1F89768;
+
+				Offsets::EntityType = 0x10B8;
+				Offsets::PlayerInfo = 0x10C8;
+				Offsets::WeaponManager = 0x10D8;
+				Offsets::PlayerNetID = 0x78;
 
 				bIsIntialized = true;
 			}
@@ -88,6 +103,11 @@ namespace Cheat
 				ViewPort = ModuleBase + 0x1F9E9F0;
 				Camera = ModuleBase + 0x1F9F898;
 
+				Offsets::EntityType = 0x10B8;
+				Offsets::PlayerInfo = 0x10C8;
+				Offsets::WeaponManager = 0x10D8;
+				Offsets::PlayerNetID = 0x88;
+
 				bIsIntialized = true;
 			}
 		}
@@ -113,6 +133,11 @@ namespace Cheat
 				ReplayInterface = ModuleBase + 0x1F2E7A8;
 				ViewPort = ModuleBase + 0x1FD6F70;
 				Camera = ModuleBase + 0x1FD7E18;
+
+				Offsets::EntityType = 0x10B8;
+				Offsets::PlayerInfo = 0x10A8;
+				Offsets::WeaponManager = 0x10D8;
+				Offsets::PlayerNetID = 0x88;
 
 				bIsIntialized = true;
 			}
@@ -140,6 +165,11 @@ namespace Cheat
 				ViewPort = ModuleBase + 0x1FD8570;
 				Camera = ModuleBase + 0x1FD9418;
 
+				Offsets::EntityType = 0x10B8;
+				Offsets::PlayerInfo = 0x10C8;
+				Offsets::WeaponManager = 0x10D8;
+				Offsets::PlayerNetID = 0x88;
+
 				bIsIntialized = true;
 			}
 		}
@@ -165,6 +195,11 @@ namespace Cheat
 				ReplayInterface = ModuleBase + 0x20304C8;
 				ViewPort = ModuleBase + 0x20D8C90;
 				Camera = ModuleBase + 0x20D9B38;
+
+				Offsets::EntityType = 0x10B8;
+				Offsets::PlayerInfo = 0x10C8;
+				Offsets::WeaponManager = 0x10D8;
+				Offsets::PlayerNetID = 0x88;
 
 				bIsIntialized = true;
 			}
@@ -192,6 +227,11 @@ namespace Cheat
 				ViewPort = ModuleBase + 0x1FBC100;
 				Camera = ModuleBase + 0x1FBCFA8;
 
+				Offsets::EntityType = 0x1098;
+				Offsets::PlayerInfo = 0x10A8;
+				Offsets::WeaponManager = 0x10B8;
+				Offsets::PlayerNetID = 0x88;
+
 				bIsIntialized = true;
 			}
 		}
@@ -218,6 +258,11 @@ namespace Cheat
 				ViewPort = ModuleBase + 0x1FEAAC0;
 				Camera = ModuleBase + 0x1FEB968;
 
+				Offsets::EntityType = 0x1098;
+				Offsets::PlayerInfo = 0x10A8;
+				Offsets::WeaponManager = 0x10B8;
+				Offsets::PlayerNetID = 0xE8;
+
 				bIsIntialized = true;
 			}
 		}
@@ -243,6 +288,11 @@ namespace Cheat
 				ReplayInterface = ModuleBase + 0x1F58B58;
 				ViewPort = ModuleBase + 0x20019E0;
 				Camera = ModuleBase + 0x2002888;
+
+				Offsets::EntityType = 0x1098;
+				Offsets::PlayerInfo = 0x10A8;
+				Offsets::WeaponManager = 0x10B8;
+				Offsets::PlayerNetID = 0xE8;
 
 				bIsIntialized = true;
 			}
@@ -316,6 +366,83 @@ namespace Cheat
 #endif // _DEBUG
 		}
 
+		LockList.lock();
+
+		EntityList.clear();
+		EntityList.shrink_to_fit();
+
+		for (size_t i = 0; i < pPedInterface->PedsAtList(); i++)
+		{
+			CPed* Ped = pPedInterface->PedList()->Ped(i);
+
+			if (!Ped)
+				continue;
+
+			if (Ped->GetHealth() <= 0)
+				continue;
+
+			if (CachedStaticInfoList.find(Ped) == CachedStaticInfoList.end())
+			{
+				PedStaticInfo StaticInfo;
+				{
+					StaticInfo.Ped = Ped;
+					StaticInfo.iIndex = i;
+					StaticInfo.bIsLocalPlayer = (Ped == pLocalPlayer);
+					StaticInfo.bIsNPC = Ped->IsNPC();
+
+					if (StaticInfo.bIsNPC || LanGame)
+					{
+						StaticInfo.NetId = -1;
+					}
+					else
+					{
+						StaticInfo.NetId = Ped->GetPlayerInfo()->GetPlayerID();
+					}
+				}
+
+				CachedStaticInfoList[Ped] = StaticInfo;
+			}
+
+			Entity CurrentEntity;
+			CurrentEntity.StaticInfo = CachedStaticInfoList[Ped];
+
+			if (CurrentEntity.StaticInfo.Name.empty())
+			{
+				if (CurrentEntity.StaticInfo.bIsNPC)
+				{
+					CurrentEntity.StaticInfo.Name = XorStr("NPC");
+				}
+
+				if (!PlayersInfo.empty() && !PlayerIdToName.empty())
+				{
+					auto it = PlayerIdToName.find(CurrentEntity.StaticInfo.NetId);
+					if (it != PlayerIdToName.end() && CurrentEntity.StaticInfo.NetId != -1)
+					{
+						CurrentEntity.StaticInfo.Name = it->second;
+					}
+					else
+					{
+						CurrentEntity.StaticInfo.Name = XorStr("username");
+					}
+				}
+			}
+
+			CurrentEntity.Cordinates = Ped->GetCoordinate();
+
+			if (CurrentEntity.StaticInfo.bIsLocalPlayer)
+			{
+				LocalPlayerInfo.Ped = Ped;
+
+				LocalPlayerInfo.iIndex = i;
+				LocalPlayerInfo.WorldPos = CurrentEntity.Cordinates;
+				LocalPlayerInfo.ScreenPos = WorldToScreen(CurrentEntity.Cordinates);
+			}
+
+			EntityList.push_back(CurrentEntity);
+		}
+
+		LockList.unlock();
+
 		if (ServerIp.empty() && !LanGame)
 		{
 			if (FivemFolder.empty() || CrashoMetryLocation.empty())
@@ -385,6 +512,49 @@ namespace Cheat
 				std::thread([&]() { this->UpdateNamesThread(); }).detach();
 			}
 		}
+	}
+
+	ImVec2 FivemSDK::WorldToScreen(Vector3D Pos)
+	{
+		if (!pViewPort)
+		{
+			pViewPort = FrameWork::Memory::ReadMemory<uint64_t>(ViewPort);
+			if (!pViewPort)
+				return ImVec2(0, 0);
+		}
+
+		Matrix4x4 ViewMatrix = FrameWork::Memory::ReadMemory<Matrix4x4>(pViewPort + 0x24C);
+
+		ViewMatrix.TransposeThisMatrix();
+
+		Vector4D VecX(ViewMatrix._21, ViewMatrix._22, ViewMatrix._23, ViewMatrix._24);
+		Vector4D VecY(ViewMatrix._31, ViewMatrix._32, ViewMatrix._33, ViewMatrix._34);
+		Vector4D VecZ(ViewMatrix._41, ViewMatrix._42, ViewMatrix._43, ViewMatrix._44);
+
+		Vector3D ScreenPos;
+		ScreenPos.x = (VecX.x * Pos.x) + (VecX.y * Pos.y) + (VecX.z * Pos.z) + VecX.w;
+		ScreenPos.y = (VecY.x * Pos.x) + (VecY.y * Pos.y) + (VecY.z * Pos.z) + VecY.w;
+		ScreenPos.z = (VecZ.x * Pos.x) + (VecZ.y * Pos.y) + (VecZ.z * Pos.z) + VecZ.w;
+
+		if (ScreenPos.z <= 0.1f)
+			return ImVec2(0, 0);
+
+		ScreenPos.z = 1.0f / ScreenPos.z;
+		ScreenPos.x *= ScreenPos.z;
+		ScreenPos.y *= ScreenPos.z;
+
+		ScreenPos.x += ImGui::GetIO().DisplaySize.x / 2 + float(0.5f * ScreenPos.x * ImGui::GetIO().DisplaySize.x + 0.5f);
+		ScreenPos.y = ImGui::GetIO().DisplaySize.y / 2 - float(0.5f * ScreenPos.y * ImGui::GetIO().DisplaySize.y + 0.5f);
+
+		return ImVec2(ScreenPos.x, ScreenPos.y);
+	}
+
+	bool FivemSDK::IsOnScreen(ImVec2 Pos)
+	{
+		if (Pos.x < 0.1f || Pos.y < 0.1 || Pos.x > ImGui::GetIO().DisplaySize.x || Pos.y > ImGui::GetIO().DisplaySize.y)
+			return false;
+
+		return true;
 	}
 
 	void FivemSDK::UpdateNamesThread()
