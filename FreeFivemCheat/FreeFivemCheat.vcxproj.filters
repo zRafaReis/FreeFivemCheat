@@ -20,6 +20,15 @@
     <ClCompile Include="FrameWork\Utilities\Misc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Cheat\Cheat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheat\FivemSDK\Classes.hpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheat\FivemSDK\Fivem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FrameWork\FrameWork.hpp">
@@ -272,6 +281,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FrameWork\Utilities\Misc.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheat\Cheat.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheat\FivemSDK\Fivem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

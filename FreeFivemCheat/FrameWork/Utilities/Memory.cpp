@@ -45,7 +45,7 @@ BOOL CALLBACK EnumWindowsCallback(HWND Handle, LPARAM lParam)
 
 namespace FrameWork
 {
-	HWND Memory::GetWindowHandleByPID(int Pid)
+	HWND Memory::GetWindowHandleByPID(DWORD Pid)
 	{
 		TGetWindowHandleData HandleData;
 		HandleData.Pid = Pid;
@@ -96,14 +96,48 @@ namespace FrameWork
 		}
 		else
 		{
-#ifdef _DEBUG
-			std::cout << XorStr("[ERROR : FrameWork::Memory::GetProcessPidByName::Process32First] Error:") << SafeCall(GetLastError)() << std::endl;
-#endif // _DEBUG
 			SafeCall(CloseHandle)(hSnapshot);
 			return 0;
 		}
 
 		SafeCall(CloseHandle)(hSnapshot);
 		return Pid;
+	}
+
+	uint64_t Memory::GetModuleBaseByName(DWORD Pid, std::wstring ModuleName)
+	{
+		HANDLE hSnapshot = SafeCall(CreateToolhelp32Snapshot)(TH32CS_SNAPMODULE, Pid);
+		if (!hSnapshot || hSnapshot == INVALID_HANDLE_VALUE || hSnapshot == ((HANDLE)(LONG_PTR)ERROR_BAD_LENGTH))
+		{
+#ifdef _DEBUG
+			std::cout << XorStr("[ERROR : FrameWork::Memory::GetModuleBaseByName::CreateToolhelp32Snapshot] Error:") << SafeCall(GetLastError)() << std::endl;
+#endif // _DEBUG
+			return 0;
+		}
+
+		uint64_t ModuleBase;
+		MODULEENTRY32 ModuleEntry;
+		ModuleEntry.dwSize = sizeof(ModuleEntry);
+		if (SafeCall(Module32First)(hSnapshot, &ModuleEntry))
+		{
+			while (_wcsicmp(ModuleEntry.szModule, ModuleName.c_str()))
+			{
+				if (!SafeCall(Module32Next)(hSnapshot, &ModuleEntry)) // Copy The Next Process of the Snapshot and Paste at PROCESSENTRY32 Struct And Check if The Function Worked
+				{
+					SafeCall(CloseHandle)(hSnapshot);
+					return 0;
+				}
+			}
+
+			ModuleBase = (uint64_t)ModuleEntry.modBaseAddr;
+		}
+		else
+		{
+			SafeCall(CloseHandle)(hSnapshot);
+			return 0;
+		}
+
+		SafeCall(CloseHandle)(hSnapshot);
+		return ModuleBase;
 	}
 }

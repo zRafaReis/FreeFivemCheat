@@ -139,11 +139,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cheat\Cheat.cpp" />
+    <ClCompile Include="Cheat\FivemSDK\Fivem.cpp" />
+    <ClCompile Include="Cheat\FivemSDK\Classes.hpp" />
     <ClCompile Include="FrameWork\Utilities\Memory.cpp" />
     <ClCompile Include="FrameWork\Utilities\Misc.cpp" />
     <ClCompile Include="FreeFivemCheat.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cheat\Cheat.hpp" />
+    <ClInclude Include="Cheat\FivemSDK\Fivem.hpp" />
     <ClInclude Include="FrameWork\Dependencies\DirectX\Include\audiodefs.h" />
     <ClInclude Include="FrameWork\Dependencies\DirectX\Include\comdecl.h" />
     <ClInclude Include="FrameWork\Dependencies\DirectX\Include\D2D1.h" />
